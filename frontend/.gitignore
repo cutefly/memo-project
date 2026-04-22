@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Logs and PID files
+*.log
+*.pid
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# IDE and System files
+.vscode/
+.idea/
+.DS_Store
