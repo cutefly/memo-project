@@ -127,17 +127,31 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
+// Types
+interface Memo {
+  id: string;
+  content: string;
+  category: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+interface MemoForm {
+  content: string;
+  category: string;
+}
+
 const loading = ref(false)
-const memos = ref([])
-const form = ref({
+const memos = ref<Memo[]>([])
+const form = ref<MemoForm>({
   content: '',
   category: '일반'
 })
-const editingMemo = ref(null)
+const editingMemo = ref<Memo | null>(null)
 const selectedFilter = ref('all')
 
 const categories = ['일반', '개발', '쇼핑', '기타']
@@ -156,8 +170,8 @@ const filteredMemos = computed(() => {
 })
 
 // 카테고리 클래스 반환
-function getCategoryClass(category) {
-  const classes = {
+function getCategoryClass(category: string) {
+  const classes: Record<string, string> = {
     '개발': 'bg-blue-100 text-blue-800',
     '쇼핑': 'bg-green-100 text-green-800',
     '일반': 'bg-purple-100 text-purple-800',
@@ -166,11 +180,14 @@ function getCategoryClass(category) {
   return classes[category] || 'bg-gray-100 text-gray-800'
 }
 
+// API URL (Relative for production, absolute for dev if needed)
+const API_URL = '/api/memos'
+
 // 메모 불러오기
 async function fetchMemos() {
   try {
     loading.value = true
-    const response = await axios.get('/api/memos')
+    const response = await axios.get<Memo[]>(API_URL)
     memos.value = response.data
   } catch (error) {
     console.error('메모 불러오기 오류:', error)
@@ -191,19 +208,15 @@ async function handleSubmit() {
     loading.value = true
     if (editingMemo.value) {
       // 수정
-      await axios.put(`/api/memos/${editingMemo.value.id}`, form.value)
-      const index = memos.value.findIndex(m => m.id === editingMemo.value.id)
+      const response = await axios.put<Memo>(`${API_URL}/${editingMemo.value.id}`, form.value)
+      const index = memos.value.findIndex(m => m.id === editingMemo.value!.id)
       if (index !== -1) {
-        memos.value[index] = { 
-          ...memos.value[index], 
-          ...form.value, 
-          updated_at: new Date().toISOString() 
-        }
+        memos.value[index] = response.data
       }
       cancelEdit()
     } else {
       // 새로 작성
-      const response = await axios.post('/api/memos', form.value)
+      const response = await axios.post<Memo>(API_URL, form.value)
       memos.value.unshift(response.data)
     }
     
@@ -217,11 +230,11 @@ async function handleSubmit() {
 }
 
 // 메모 삭제
-async function deleteMemo(id) {
+async function deleteMemo(id: string) {
   if (!confirm('정말 삭제하시겠습니까?')) return
 
   try {
-    await axios.delete(`/api/memos/${id}`)
+    await axios.delete(`${API_URL}/${id}`)
     memos.value = memos.value.filter(m => m.id !== id)
   } catch (error) {
     console.error('메모 삭제 오류:', error)
@@ -230,14 +243,13 @@ async function deleteMemo(id) {
 }
 
 // 메모 수정 시작
-function startEdit(memo) {
+function startEdit(memo: Memo) {
   editingMemo.value = memo
   form.value = {
     content: memo.content,
     category: memo.category || '일반'
   }
-  // 스크롤을 폼 섹션으로 이동
-  document.querySelector('textarea').scrollIntoView({ behavior: 'smooth' })
+  document.querySelector('textarea')?.scrollIntoView({ behavior: 'smooth' })
 }
 
 // 수정 취소
@@ -247,10 +259,10 @@ function cancelEdit() {
 }
 
 // 날짜 포맷팅
-function formatDate(dateString) {
+function formatDate(dateString: string) {
   const date = new Date(dateString)
   const now = new Date()
-  const diffMs = now - date
+  const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
@@ -269,7 +281,6 @@ function formatDate(dateString) {
   })
 }
 
-// 컴포넌트 마운트 시 메모 불러오기
 onMounted(() => {
   fetchMemos()
 })
@@ -286,7 +297,7 @@ h1 {
   font-weight: 800;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-fill-color: transparent;
   margin-bottom: 0.5rem;
 }
 

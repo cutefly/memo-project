@@ -5,7 +5,6 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     host: '0.0.0.0', // 모든 네트워크 인터페이스에서 접속 가능
-    port: 4000, // 선호 포트
     strictPort: false, // 포트가 사용 중이면 다른 포트 자동 선택
     allowedHosts: [
       'run.club012.com',
